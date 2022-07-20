@@ -1,6 +1,6 @@
 FROM postgis/postgis:14-3.2
-COPY ./requirements.txt /requirements.txt
 RUN apt update && apt install -y postgis python3-pip
+COPY ./requirements.txt /requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pg_createcluster 14 main
 COPY ./initdb.sh /initdb.sh
