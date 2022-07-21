@@ -29,13 +29,14 @@ def hook():
     file_name = json["file-name"]
 
     if (file_name != last_file):
+        last_file = file_name
         blob_file_name = re.search("/blobs/(.*)$", file_name).group(1)
         timestamp_text = re.search("RF3\.(.*)\.nc$", blob_file_name).group(1)
         
         with open("./tmp/current.nc", "wb") as download_file:
           download_file.write(blob_client.download_blob(blob_file_name).readall())
         
-        os.system("raster2pgsql tmp/current.nc temporary_raster | psql -U postgres")
+        os.system("raster2pgsql tmp/current.nc temporary_raster -d | psql -U postgres")
 
         with engine.connect() as conn:
             result = conn.execute(text("""
@@ -44,7 +45,6 @@ def hook():
             results = result.all()
             print(results)
 
-    last_file = file_name
 
     print(file_name)
     
