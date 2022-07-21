@@ -3,6 +3,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
 import os, json, re
+from datetime import datetime
+from pytz import timezone
 
 last_file = ""
 
@@ -24,6 +26,8 @@ CORS(app)
 def hook():
     global last_file
     global blob_client
+    utc = timezone("utc")
+    syd = timezone("Australia/Sydney")
 
     json = request.get_json()
     file_name = json["file-name"]
@@ -32,22 +36,24 @@ def hook():
         last_file = file_name
         blob_file_name = re.search("/blobs/(.*)$", file_name).group(1)
         timestamp_text = re.search("RF3\.(.*)\.nc$", blob_file_name).group(1)
+        timestamp_utc = utc.localize(datetime.strptime(timestamp_text, "%Y%m%d%H%M%S"))
+        timestamp_syd = timestamp_utc.astimezone(syd)
+        timestamp_text_syd = datetime.strftime(timestamp_syd, "%Y%m%dT%H%M")
+        
+        print(timestamp_text_syd)
         
         with open("./tmp/current.nc", "wb") as download_file:
           download_file.write(blob_client.download_blob(blob_file_name).readall())
         
         os.system("raster2pgsql tmp/current.nc temporary_raster -d | psql -U postgres")
 
-        with engine.connect() as conn:
-            result = conn.execute(text("""
-            SELECT * FROM temporary_raster
-            """))
-            results = result.all()
-            print(results)
+        with engine.begin() as conn:
+            conn.execute(text("""
+            INSERT INTO rainfall_raster (stamp, rast) VALUES (:stamp, (SELECT st_transform(st_setsrid(rast, 100001), 4326) FROM temporary_raster))
+            """), {"stamp": timestamp_text_syd})
 
+        print("\n\n")
 
-    print(file_name)
-    
     return file_name
 
 if (__name__ == "__main__"):
