@@ -12,7 +12,8 @@ container_name = "rainfields3"
 blob_client = blob_service_client.get_container_client(container=container_name)
 
 local_path = "./tmp"
-os.mkdir(local_path)
+if not os.path.isdir(local_path):
+    os.mkdir(local_path)
 
 engine = create_engine(f"postgresql://postgres@postgres?host=/var/run/postgresql/", future=True)
 
