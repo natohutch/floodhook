@@ -51,6 +51,7 @@ def hook():
             conn.execute(text("""
             INSERT INTO rainfall_raster (stamp, rast) VALUES (:stamp, (SELECT st_transform(st_setsrid(rast, 100001), 4326) FROM temporary_raster))
             """), {"stamp": timestamp_text_syd})
+            requests.request("GET", "http://172.17.0.1:8080/newfile")
 
         print("\n\n")
 
