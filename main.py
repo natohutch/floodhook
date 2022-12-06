@@ -2,7 +2,7 @@ from azure.storage.blob import BlobServiceClient
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
-import os, json, re
+import os, json, re, requests
 from datetime import datetime
 from pytz import timezone
 
